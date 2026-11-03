@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 学生综合管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h1>学生综合管理系统</h1>
+        <p class="sub">管理员 / 教师 / 学生 统一登录入口</p>
+        <div id="msg" class="msg"></div>
+        <div class="form-item">
+            <label>用户名</label>
+            <input id="username" type="text" placeholder="请输入用户名" value="admin">
+        </div>
+        <div class="form-item">
+            <label>密码</label>
+            <input id="password" type="password" placeholder="请输入密码" value="123456">
+        </div>
+        <button class="btn block" onclick="doLogin()">登 录</button>
+        <p class="sub mt10" style="margin-bottom:0;">
+            还没有账号？<a href="register.html">注册学生账号</a>
+        </p>
+        <p class="sub" style="font-size:12px;color:#bbb;">
+            默认账号：admin / teacher1 / student1（密码均为 123456）
+        </p>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script>
+async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!username || !password) {
+        showMsg('msg', 'err', '请输入用户名和密码');
+        return;
+    }
+    const r = await request('/user', { method: 'login', username, password });
+    if (r.code !== 0) {
+        showMsg('msg', 'err', r.msg);
+        return;
+    }
+    const role = r.data.role;
+    const pages = { ADMIN: 'admin/index.html', TEACHER: 'teacher/index.html', STUDENT: 'student/index.html' };
+    location.href = pages[role] || 'login.html';
+}
+document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

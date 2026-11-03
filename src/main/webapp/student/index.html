@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - 学生综合管理系统</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">学生综合管理系统</div>
+        <div class="nav-item active" data-sec="overview">我的概览</div>
+        <div class="nav-item" data-sec="scores">我的成绩</div>
+        <div class="nav-item" data-sec="courses">我的课程</div>
+        <div class="nav-item" data-sec="rank">班级排名</div>
+        <div class="nav-item" data-sec="notices">公告通知</div>
+        <div class="nav-item" data-sec="feedback">反馈留言</div>
+        <div class="nav-item" data-sec="resources">课件下载</div>
+        <div class="nav-item" data-sec="profile">个人中心</div>
+    </aside>
+    <div class="main">
+        <div class="topbar">
+            <div class="hello" id="helloUser">欢迎</div>
+            <div><button class="btn small gray" onclick="logout()">退出登录</button></div>
+        </div>
+
+        <!-- 概览 -->
+        <section class="section active" id="sec-overview">
+            <div class="panel"><h3>我的学业概览</h3>
+                <div class="stat-cards" id="statCards"></div>
+            </div>
+        </section>
+
+        <!-- 我的成绩 -->
+        <section class="section" id="sec-scores">
+            <div class="panel"><h3>各科成绩</h3><div id="scoreTable"></div></div>
+            <div class="panel"><h3>绩点（GPA）</h3><div id="gpaBox"></div></div>
+        </section>
+
+        <!-- 我的课程 -->
+        <section class="section" id="sec-courses">
+            <div class="panel"><h3>本班课程</h3><div id="courseTable"></div></div>
+        </section>
+
+        <!-- 班级排名 -->
+        <section class="section" id="sec-rank">
+            <div class="panel"><h3>班级成绩排名</h3><div id="rankInfo"></div></div>
+            <div class="panel"><h3>排名明细</h3><div id="rankTable"></div></div>
+        </section>
+
+        <!-- 公告 -->
+        <section class="section" id="sec-notices">
+            <div class="panel"><h3>公告通知</h3><div id="noticeTable"></div></div>
+        </section>
+
+        <!-- 反馈留言 -->
+        <section class="section" id="sec-feedback">
+            <div class="panel"><h3>提交留言</h3>
+                <div class="form-item"><textarea id="fContent" placeholder="向老师或管理员提交反馈..."></textarea></div>
+                <button class="btn" onclick="submitFeedback()">提交</button>
+                <div id="msg-feedback" class="msg mt10"></div>
+            </div>
+            <div class="panel"><h3>我的留言</h3><div id="feedbackTable"></div></div>
+        </section>
+
+        <!-- 课件下载 -->
+        <section class="section" id="sec-resources">
+            <div class="panel"><h3>课件资料下载</h3><div id="resourceTable"></div></div>
+        </section>
+
+        <!-- 个人中心 -->
+        <section class="section" id="sec-profile">
+            <div class="panel"><h3>我的档案</h3>
+                <div class="form-item"><label>学号</label><input id="pStudentNo" disabled></div>
+                <div class="form-item"><label>姓名</label><input id="pName"></div>
+                <div class="form-item"><label>性别</label><select id="pGender"><option value="男">男</option><option value="女">女</option></select></div>
+                <div class="form-item"><label>电话</label><input id="pPhone"></div>
+                <div class="form-item"><label>住址</label><input id="pAddress"></div>
+                <div class="form-item"><label>班级</label><input id="pClass" disabled></div>
+                <button class="btn" onclick="saveProfile()">保存档案</button>
+                <div id="msg-profile" class="msg mt10"></div>
+            </div>
+            <div class="panel"><h3>修改密码</h3>
+                <div class="form-item"><label>原密码</label><input id="pOld" type="password"></div>
+                <div class="form-item"><label>新密码</label><input id="pNew" type="password"></div>
+                <button class="btn" onclick="savePassword()">修改密码</button>
+                <div id="msg-pwd" class="msg mt10"></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+function $(id) { return document.getElementById(id); }
+function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    $('sec-' + name).classList.add('active');
+    document.querySelector('.nav-item[data-sec="' + name + '"]').classList.add('active');
+    if (loaders[name]) loaders[name]();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => showSection(n.dataset.sec)));
+
+let _profile = null;
+async function myProfile() {
+    if (_profile) return _profile;
+    const r = await request('/student', { method: 'myProfile' });
+    _profile = r.data;
+    return _profile;
+}
+
+/* ================= 概览 ================= */
+async function loadOverview() {
+    const [gpa, rank] = await Promise.all([
+        request('/score', { method: 'myGpa' }),
+        request('/score', { method: 'myRank' })
+    ]);
+    const g = gpa.data || {};
+    const rk = (rank.code === 0 && rank.data) ? rank.data : { rank: null, total: 0 };
+    const cards = [
+        { num: g.weightedAvg == null ? '-' : g.weightedAvg, label: '加权平均分' },
+        { num: g.gpa == null ? '-' : g.gpa, label: 'GPA (4.0)' },
+        { num: rk.rank || '-', label: '班级排名 / ' + rk.total },
+        { num: g.courseCount, label: '已修课程' }
+    ];
+    $('statCards').innerHTML = cards.map(c =>
+        '<div class="stat-card"><div class="num">' + c.num + '</div><div class="label">' + c.label + '</div></div>'
+    ).join('');
+}
+
+/* ================= 成绩 ================= */
+async function loadScores() {
+    const [scores, gpa] = await Promise.all([
+        request('/score', { method: 'listMy' }),
+        request('/score', { method: 'myGpa' })
+    ]);
+    let html = '<table><tr><th>课程</th><th>学分</th><th>成绩</th></tr>';
+    scores.data.forEach(s => {
+        html += '<tr><td>' + esc(s.courseName) + '</td><td>' + s.credit + '</td><td>' + (s.score == null ? '-' : s.score) + '</td></tr>';
+    });
+    $('scoreTable').innerHTML = html + '</table>';
+    $('gpaBox').innerHTML = '<p>加权平均分：<b>' + (gpa.data.weightedAvg == null ? '-' : gpa.data.weightedAvg) + '</b>　' +
+        'GPA：<b>' + (gpa.data.gpa == null ? '-' : gpa.data.gpa) + '</b>　' +
+        '总学分：<b>' + gpa.data.totalCredit + '</b></p>' +
+        '<p style="color:#999;font-size:12px;">GPA 采用 4.0 制换算：≥90→4.0，85-89→3.7，82-84→3.3，78-81→3.0，75-77→2.7，72-74→2.3，68-71→2.0，64-67→1.5，60-63→1.0，&lt;60→0</p>';
+}
+
+/* ================= 课程 ================= */
+async function loadCourses() {
+    const p = await myProfile();
+    if (!p.classId) { $('courseTable').innerHTML = '<div class="empty">尚未分配班级</div>'; return; }
+    const r = await request('/course', { method: 'listByClass', classId: p.classId });
+    let html = '<table><tr><th>课程名称</th><th>学分</th><th>授课教师</th></tr>';
+    r.data.forEach(c => { html += '<tr><td>' + esc(c.name) + '</td><td>' + c.credit + '</td><td>' + esc(c.teacherName) + '</td></tr>'; });
+    $('courseTable').innerHTML = html + '</table>';
+}
+
+/* ================= 排名 ================= */
+async function loadRank() {
+    const r = await request('/score', { method: 'myRank' });
+    if (r.code !== 0) { $('rankInfo').innerHTML = '<div class="empty">' + r.msg + '</div>'; $('rankTable').innerHTML = ''; return; }
+    const d = r.data;
+    $('rankInfo').innerHTML = '<p>我的排名：<b>第 ' + (d.rank || '-') + ' 名</b>（共 ' + d.total + ' 人）</p>';
+    let html = '<table><tr><th>名次</th><th>学号</th><th>姓名</th><th>加权平均分</th></tr>';
+    d.ranking.forEach((x, i) => {
+        html += '<tr><td>' + (i + 1) + '</td><td>' + esc(x.studentNo) + '</td><td>' + esc(x.studentName) + '</td><td>' + (x.avgScore == null ? '-' : x.avgScore) + '</td></tr>';
+    });
+    $('rankTable').innerHTML = html + '</table>';
+}
+
+/* ================= 公告 ================= */
+async function loadNotices() {
+    const r = await request('/notice', { method: 'list' });
+    if (r.code !== 0) { $('noticeTable').innerHTML = '<div class="empty">' + r.msg + '</div>'; return; }
+    let html = '<table><tr><th>标题</th><th>范围</th><th>时间</th></tr>';
+    r.data.forEach(n => {
+        html += '<tr><td>' + esc(n.title) + '</td><td>' + (n.scope === 'ALL' ? '全站' : esc(n.className)) + '</td><td>' + esc(n.createdAt) + '</td></tr>' +
+            '<tr><td colspan="3" style="color:#777;">' + esc(n.content) + '</td></tr>';
+    });
+    $('noticeTable').innerHTML = html + '</table>';
+}
+
+/* ================= 反馈 ================= */
+async function submitFeedback() {
+    const content = $('fContent').value.trim();
+    if (!content) { showMsg('msg-feedback', 'err', '留言内容不能为空'); return; }
+    const r = await request('/feedback', { method: 'add', content });
+    showMsg('msg-feedback', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { $('fContent').value = ''; loadFeedback(); }
+}
+async function loadFeedback() {
+    const r = await request('/feedback', { method: 'listMy' });
+    let html = '<table><tr><th>留言内容</th><th>回复</th><th>状态</th><th>时间</th></tr>';
+    r.data.forEach(f => {
+        html += '<tr><td>' + esc(f.content) + '</td><td>' + esc(f.reply) + '</td>' +
+            '<td>' + (f.status === 'REPLIED' ? '已回复' : '未回复') + '</td><td>' + esc(f.createdAt) + '</td></tr>';
+    });
+    $('feedbackTable').innerHTML = html + '</table>';
+}
+
+/* ================= 课件下载 ================= */
+async function loadResources() {
+    const r = await request('/resource', { method: 'list' });
+    let html = '<table><tr><th>文件名</th><th>课程</th><th>上传教师</th><th>说明</th><th>下载</th></tr>';
+    r.data.forEach(res => {
+        html += '<tr><td>' + esc(res.filename) + '</td><td>' + esc(res.courseName) + '</td><td>' + esc(res.teacherName) + '</td>' +
+            '<td>' + esc(res.description) + '</td>' +
+            '<td><a class="btn small" href="' + contextPath() + esc(res.path) + '" download>下载</a></td></tr>';
+    });
+    $('resourceTable').innerHTML = html + '</table>';
+}
+
+/* ================= 个人中心 ================= */
+async function loadProfile() {
+    const p = await myProfile();
+    $('pStudentNo').value = p.studentNo || '';
+    $('pName').value = p.name || '';
+    $('pGender').value = p.gender || '男';
+    $('pPhone').value = p.phone || '';
+    $('pAddress').value = p.address || '';
+    $('pClass').value = p.className || '未分配';
+}
+async function saveProfile() {
+    const p = await myProfile();
+    const r = await request('/student', {
+        method: 'update',
+        studentNo: p.studentNo, classId: p.classId, enrollmentYear: p.enrollmentYear,
+        name: $('pName').value, gender: $('pGender').value, phone: $('pPhone').value, address: $('pAddress').value
+    });
+    _profile = null;
+    showMsg('msg-profile', r.code === 0 ? 'ok' : 'err', r.msg);
+}
+async function savePassword() {
+    const r = await request('/user', { method: 'updatePassword', oldPwd: $('pOld').value, newPwd: $('pNew').value });
+    showMsg('msg-pwd', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { $('pOld').value = ''; $('pNew').value = ''; }
+}
+
+const loaders = {
+    overview: loadOverview,
+    scores: loadScores,
+    courses: loadCourses,
+    rank: loadRank,
+    notices: loadNotices,
+    feedback: loadFeedback,
+    resources: loadResources,
+    profile: loadProfile
+};
+
+initTopbar();
+loadOverview();
+</script>
+</body>
+</html>

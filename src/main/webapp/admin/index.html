@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员后台 - 学生综合管理系统</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">学生综合管理系统</div>
+        <div class="nav-item active" data-sec="overview">概览</div>
+        <div class="nav-item" data-sec="users">账号管理</div>
+        <div class="nav-item" data-sec="teachers">教师管理</div>
+        <div class="nav-item" data-sec="students">学生档案</div>
+        <div class="nav-item" data-sec="classes">班级管理</div>
+        <div class="nav-item" data-sec="courses">课程管理</div>
+        <div class="nav-item" data-sec="notices">公告管理</div>
+        <div class="nav-item" data-sec="feedback">反馈管理</div>
+        <div class="nav-item" data-sec="stats">数据统计</div>
+        <div class="nav-item" data-sec="resources">资源管理</div>
+        <div class="nav-item" data-sec="profile">个人中心</div>
+    </aside>
+    <div class="main">
+        <div class="topbar">
+            <div class="hello" id="helloUser">欢迎</div>
+            <div><button class="btn small gray" onclick="logout()">退出登录</button></div>
+        </div>
+
+        <!-- 概览 -->
+        <section class="section active" id="sec-overview">
+            <div class="panel"><h3>系统概览</h3>
+                <div class="stat-cards" id="statCards"></div>
+            </div>
+        </section>
+
+        <!-- 账号管理 -->
+        <section class="section" id="sec-users">
+            <div class="panel"><h3>账号管理</h3>
+                <div class="toolbar">
+                    <select id="userRole" onchange="loadUsers()">
+                        <option value="">全部角色</option>
+                        <option value="ADMIN">管理员</option>
+                        <option value="TEACHER">教师</option>
+                        <option value="STUDENT">学生</option>
+                    </select>
+                </div>
+                <div id="msg-users" class="msg"></div>
+                <div id="userTable"></div>
+            </div>
+        </section>
+
+        <!-- 教师管理 -->
+        <section class="section" id="sec-teachers">
+            <div class="panel"><h3>教师管理</h3>
+                <div class="toolbar">
+                    <button class="btn small" onclick="toggleTeacherForm()">+ 新增教师</button>
+                </div>
+                <div id="teacherForm" class="panel hidden" style="background:#fafbfc;">
+                    <input type="hidden" id="tId">
+                    <div class="toolbar">
+                        <input id="tUsername" placeholder="登录用户名"><input id="tPassword" placeholder="登录密码"><input id="tTeacherNo" placeholder="工号"><input id="tName" placeholder="姓名">
+                        <select id="tGender"><option value="男">男</option><option value="女">女</option></select>
+                        <input id="tPhone" placeholder="电话"><input id="tTitle" placeholder="职称">
+                        <button class="btn small success" onclick="saveTeacher()">保存</button>
+                        <button class="btn small gray" onclick="toggleTeacherForm()">取消</button>
+                    </div>
+                </div>
+                <div id="msg-teachers" class="msg"></div>
+                <div id="teacherTable"></div>
+            </div>
+        </section>
+
+        <!-- 学生档案 -->
+        <section class="section" id="sec-students">
+            <div class="panel"><h3>学生档案</h3>
+                <div class="toolbar">
+                    <select id="sClassFilter" onchange="loadStudents()"><option value="">全部班级</option></select>
+                    <button class="btn small" onclick="toggleStudentForm()">+ 新增学生</button>
+                </div>
+                <div id="studentForm" class="panel hidden" style="background:#fafbfc;">
+                    <input type="hidden" id="sId">
+                    <div class="toolbar">
+                        <input id="sUsername" placeholder="登录用户名"><input id="sPassword" placeholder="登录密码"><input id="sStudentNo" placeholder="学号"><input id="sName" placeholder="姓名">
+                        <select id="sGender"><option value="男">男</option><option value="女">女</option></select>
+                        <input id="sPhone" placeholder="电话"><select id="sClassId" class="inline"></select>
+                        <input id="sEnrollmentYear" placeholder="入学年份"><input id="sAddress" placeholder="住址">
+                        <button class="btn small success" onclick="saveStudent()">保存</button>
+                        <button class="btn small gray" onclick="toggleStudentForm()">取消</button>
+                    </div>
+                </div>
+                <div id="msg-students" class="msg"></div>
+                <div id="studentTable"></div>
+            </div>
+        </section>
+
+        <!-- 班级管理 -->
+        <section class="section" id="sec-classes">
+            <div class="panel"><h3>班级管理</h3>
+                <div class="toolbar"><button class="btn small" onclick="toggleClassForm()">+ 新增班级</button></div>
+                <div id="classForm" class="panel hidden" style="background:#fafbfc;">
+                    <input type="hidden" id="cId">
+                    <div class="toolbar">
+                        <input id="cName" placeholder="班级名称"><input id="cGrade" placeholder="年级">
+                        <select id="cHeadTeacher"><option value="">选择班主任</option></select>
+                        <button class="btn small success" onclick="saveClass()">保存</button>
+                        <button class="btn small gray" onclick="toggleClassForm()">取消</button>
+                    </div>
+                </div>
+                <div id="msg-classes" class="msg"></div>
+                <div id="classTable"></div>
+            </div>
+        </section>
+
+        <!-- 课程管理 -->
+        <section class="section" id="sec-courses">
+            <div class="panel"><h3>课程管理</h3>
+                <div class="toolbar"><button class="btn small" onclick="toggleCourseForm()">+ 新增课程</button></div>
+                <div id="courseForm" class="panel hidden" style="background:#fafbfc;">
+                    <input type="hidden" id="coId">
+                    <div class="toolbar">
+                        <input id="coName" placeholder="课程名称"><input id="coCredit" placeholder="学分" type="number" step="0.5">
+                        <select id="coTeacher"><option value="">选择授课教师</option></select>
+                        <button class="btn small success" onclick="saveCourse()">保存</button>
+                        <button class="btn small gray" onclick="toggleCourseForm()">取消</button>
+                    </div>
+                </div>
+                <div id="msg-courses" class="msg"></div>
+                <div id="courseTable"></div>
+            </div>
+        </section>
+
+        <!-- 公告管理 -->
+        <section class="section" id="sec-notices">
+            <div class="panel"><h3>发布公告</h3>
+                <div class="form-item"><label>标题</label><input id="nTitle"></div>
+                <div class="form-item"><label>内容</label><textarea id="nContent"></textarea></div>
+                <div class="toolbar">
+                    <select id="nScope" onchange="toggleClassSel()">
+                        <option value="ALL">全站公告</option>
+                        <option value="CLASS">班级公告</option>
+                    </select>
+                    <select id="nClassId" class="hidden"><option value="">选择班级</option></select>
+                    <button class="btn" onclick="publishNotice()">发布</button>
+                </div>
+                <div id="msg-notices" class="msg"></div>
+            </div>
+            <div class="panel"><h3>公告列表</h3><div id="noticeTable"></div></div>
+        </section>
+
+        <!-- 反馈管理 -->
+        <section class="section" id="sec-feedback">
+            <div class="panel"><h3>反馈留言</h3>
+                <div id="msg-feedback" class="msg"></div>
+                <div id="feedbackTable"></div>
+            </div>
+        </section>
+
+        <!-- 数据统计 -->
+        <section class="section" id="sec-stats">
+            <div class="panel"><h3>班级平均分</h3><div id="classAvgBars"></div></div>
+            <div class="panel"><h3>课程平均分</h3><div id="courseAvgBars"></div></div>
+            <div class="panel"><h3>成绩分布</h3>
+                <div class="toolbar">
+                    <select id="distClass" onchange="loadDistribution()"><option value="">选择班级</option></select>
+                </div>
+                <div id="distBars"></div>
+            </div>
+        </section>
+
+        <!-- 资源管理 -->
+        <section class="section" id="sec-resources">
+            <div class="panel"><h3>课件资源</h3>
+                <div id="msg-resources" class="msg"></div>
+                <div id="resourceTable"></div>
+            </div>
+        </section>
+
+        <!-- 个人中心 -->
+        <section class="section" id="sec-profile">
+            <div class="panel"><h3>个人资料</h3>
+                <div class="form-item"><label>姓名</label><input id="pName"></div>
+                <div class="form-item"><label>邮箱</label><input id="pEmail"></div>
+                <div class="form-item"><label>电话</label><input id="pPhone"></div>
+                <button class="btn" onclick="saveProfile()">保存资料</button>
+                <div id="msg-profile" class="msg mt10"></div>
+            </div>
+            <div class="panel"><h3>修改密码</h3>
+                <div class="form-item"><label>原密码</label><input id="pOld" type="password"></div>
+                <div class="form-item"><label>新密码</label><input id="pNew" type="password"></div>
+                <button class="btn" onclick="savePassword()">修改密码</button>
+                <div id="msg-pwd" class="msg mt10"></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+/* ================= 通用 ================= */
+function $(id) { return document.getElementById(id); }
+function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    $('sec-' + name).classList.add('active');
+    document.querySelector('.nav-item[data-sec="' + name + '"]').classList.add('active');
+    const loader = loaders[name];
+    if (loader) loader();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => showSection(n.dataset.sec)));
+
+function fillSelect(el, list, textFn, valFn, emptyText) {
+    el.innerHTML = '<option value="">' + (emptyText || '请选择') + '</option>';
+    (list || []).forEach(item => {
+        const o = document.createElement('option');
+        o.value = valFn(item);
+        o.textContent = textFn(item);
+        el.appendChild(o);
+    });
+}
+
+/* ================= 概览 ================= */
+async function loadOverview() {
+    const [stu, tea, cla, cou] = await Promise.all([
+        request('/student', { method: 'list' }),
+        request('/teacher', { method: 'list' }),
+        request('/clazz', { method: 'list' }),
+        request('/course', { method: 'list' })
+    ]);
+    const cards = [
+        { num: stu.data.length, label: '学生' },
+        { num: tea.data.length, label: '教师' },
+        { num: cla.data.length, label: '班级' },
+        { num: cou.data.length, label: '课程' }
+    ];
+    $('statCards').innerHTML = cards.map(c =>
+        '<div class="stat-card"><div class="num">' + c.num + '</div><div class="label">' + c.label + '</div></div>'
+    ).join('');
+}
+
+/* ================= 账号管理 ================= */
+async function loadUsers() {
+    const role = $('userRole').value;
+    const r = await request('/user', { method: 'list', role });
+    let html = '<table><tr><th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>邮箱</th><th>电话</th><th>操作</th></tr>';
+    const roleText = { ADMIN: '管理员', TEACHER: '教师', STUDENT: '学生' };
+    r.data.forEach(u => {
+        html += '<tr><td>' + u.id + '</td><td>' + esc(u.username) + '</td><td>' + esc(u.name) + '</td><td>' + roleText[u.role] + '</td>' +
+            '<td>' + esc(u.email) + '</td><td>' + esc(u.phone) + '</td>' +
+            '<td><button class="btn small gray" onclick="resetPwd(' + u.id + ')">重置密码</button> ' +
+            '<button class="btn small danger" onclick="delUser(' + u.id + ',\'' + u.role + '\')">删除</button></td></tr>';
+    });
+    $('userTable').innerHTML = html + '</table>';
+}
+async function resetPwd(id) {
+    if (!confirm('确认将该账号密码重置为 123456？')) return;
+    const r = await request('/user', { method: 'resetPassword', id });
+    showMsg('msg-users', r.code === 0 ? 'ok' : 'err', r.msg);
+}
+async function delUser(id, role) {
+    if (!confirm('确认删除该账号？')) return;
+    const r = await request('/user', { method: 'delete', id, role });
+    showMsg('msg-users', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadUsers();
+}
+
+/* ================= 教师管理 ================= */
+let _teachers = [];
+function toggleTeacherForm() {
+    const f = $('teacherForm');
+    f.classList.toggle('hidden');
+    if (!f.classList.contains('hidden') && !$('tId').value) {
+        ['tId','tUsername','tPassword','tTeacherNo','tName','tPhone','tTitle'].forEach(i => $(i).value = '');
+    }
+}
+async function loadTeachers() {
+    const r = await request('/teacher', { method: 'list' });
+    _teachers = r.data;
+    let html = '<table><tr><th>ID</th><th>工号</th><th>姓名</th><th>性别</th><th>电话</th><th>职称</th><th>操作</th></tr>';
+    r.data.forEach(t => {
+        html += '<tr><td>' + t.id + '</td><td>' + esc(t.teacherNo) + '</td><td>' + esc(t.name) + '</td><td>' + esc(t.gender) + '</td>' +
+            '<td>' + esc(t.phone) + '</td><td>' + esc(t.title) + '</td>' +
+            '<td><button class="btn small gray" onclick="editTeacher(' + t.id + ')">编辑</button> ' +
+            '<button class="btn small danger" onclick="delTeacher(' + t.id + ')">删除</button></td></tr>';
+    });
+    $('teacherTable').innerHTML = html + '</table>';
+}
+function editTeacher(id) {
+    const t = _teachers.find(x => x.id === id);
+    if (!t) return;
+    $('tId').value = t.id;
+    $('tUsername').value = '';
+    $('tPassword').value = '';
+    $('tTeacherNo').value = t.teacherNo;
+    $('tName').value = t.name;
+    $('tGender').value = t.gender || '男';
+    $('tPhone').value = t.phone;
+    $('tTitle').value = t.title;
+    $('teacherForm').classList.remove('hidden');
+    $('tUsername').placeholder = '（不改用户名）';
+}
+async function saveTeacher() {
+    const id = $('tId').value;
+    const data = {
+        method: id ? 'update' : 'add',
+        id, teacherNo: $('tTeacherNo').value, name: $('tName').value,
+        gender: $('tGender').value, phone: $('tPhone').value, title: $('tTitle').value
+    };
+    if (!id) { data.username = $('tUsername').value; data.password = $('tPassword').value; }
+    const r = await request('/teacher', data);
+    showMsg('msg-teachers', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { toggleTeacherForm(); loadTeachers(); }
+}
+async function delTeacher(id) {
+    if (!confirm('确认删除该教师？')) return;
+    const r = await request('/teacher', { method: 'delete', id });
+    showMsg('msg-teachers', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadTeachers();
+}
+
+/* ================= 学生档案 ================= */
+let _students = [];
+async function loadClassOptions(selId, emptyText) {
+    const r = await request('/clazz', { method: 'list' });
+    fillSelect($(selId), r.data, c => c.name, c => c.id, emptyText);
+}
+function toggleStudentForm() {
+    const f = $('studentForm');
+    f.classList.toggle('hidden');
+    if (!f.classList.contains('hidden') && !$('sId').value) {
+        ['sId','sUsername','sPassword','sStudentNo','sName','sPhone','sEnrollmentYear','sAddress'].forEach(i => $(i).value = '');
+    }
+}
+async function loadStudents() {
+    const classId = $('sClassFilter').value;
+    const r = await request('/student', { method: 'list' });
+    _students = r.data.filter(s => !classId || String(s.classId) === classId);
+    let html = '<table><tr><th>学号</th><th>姓名</th><th>性别</th><th>电话</th><th>班级</th><th>住址</th><th>操作</th></tr>';
+    _students.forEach(s => {
+        html += '<tr><td>' + esc(s.studentNo) + '</td><td>' + esc(s.name) + '</td><td>' + esc(s.gender) + '</td>' +
+            '<td>' + esc(s.phone) + '</td><td>' + esc(s.className) + '</td><td>' + esc(s.address) + '</td>' +
+            '<td><button class="btn small gray" onclick="editStudent(' + s.id + ')">编辑</button> ' +
+            '<button class="btn small danger" onclick="delStudent(' + s.id + ')">删除</button></td></tr>';
+    });
+    $('studentTable').innerHTML = html + '</table>';
+}
+function editStudent(id) {
+    const s = _students.find(x => x.id === id);
+    if (!s) return;
+    $('sId').value = s.id;
+    $('sUsername').value = ''; $('sPassword').value = '';
+    $('sStudentNo').value = s.studentNo; $('sName').value = s.name;
+    $('sGender').value = s.gender || '男'; $('sPhone').value = s.phone;
+    $('sClassId').value = s.classId || ''; $('sEnrollmentYear').value = s.enrollmentYear; $('sAddress').value = s.address;
+    $('sUsername').placeholder = '（不改用户名）';
+    $('studentForm').classList.remove('hidden');
+}
+async function saveStudent() {
+    const id = $('sId').value;
+    const data = {
+        method: id ? 'update' : 'add', id,
+        studentNo: $('sStudentNo').value, name: $('sName').value, gender: $('sGender').value,
+        phone: $('sPhone').value, classId: $('sClassId').value, enrollmentYear: $('sEnrollmentYear').value, address: $('sAddress').value
+    };
+    if (!id) { data.username = $('sUsername').value; data.password = $('sPassword').value; }
+    const r = await request('/student', data);
+    showMsg('msg-students', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { toggleStudentForm(); loadStudents(); }
+}
+async function delStudent(id) {
+    if (!confirm('确认删除该学生？')) return;
+    const r = await request('/student', { method: 'delete', id });
+    showMsg('msg-students', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadStudents();
+}
+
+/* ================= 班级管理 ================= */
+let _classes = [];
+function toggleClassForm() {
+    const f = $('classForm');
+    f.classList.toggle('hidden');
+    if (!f.classList.contains('hidden') && !$('cId').value) { ['cId','cName','cGrade'].forEach(i => $(i).value = ''); }
+}
+async function loadClasses() {
+    const [c, t] = await Promise.all([request('/clazz', { method: 'list' }), request('/teacher', { method: 'list' })]);
+    _classes = c.data;
+    fillSelect($('cHeadTeacher'), t.data, x => x.name, x => x.id, '选择班主任');
+    let html = '<table><tr><th>ID</th><th>班级名称</th><th>年级</th><th>班主任</th><th>人数</th><th>操作</th></tr>';
+    c.data.forEach(cl => {
+        html += '<tr><td>' + cl.id + '</td><td>' + esc(cl.name) + '</td><td>' + esc(cl.grade) + '</td><td>' + esc(cl.headTeacherName) + '</td>' +
+            '<td>' + (cl.studentCount || 0) + '</td>' +
+            '<td><button class="btn small gray" onclick="editClass(' + cl.id + ')">编辑</button> ' +
+            '<button class="btn small danger" onclick="delClass(' + cl.id + ')">删除</button></td></tr>';
+    });
+    $('classTable').innerHTML = html + '</table>';
+}
+function editClass(id) {
+    const cl = _classes.find(x => x.id === id);
+    if (!cl) return;
+    $('cId').value = cl.id; $('cName').value = cl.name; $('cGrade').value = cl.grade;
+    $('cHeadTeacher').value = cl.headTeacherId || '';
+    $('classForm').classList.remove('hidden');
+}
+async function saveClass() {
+    const id = $('cId').value;
+    const r = await request('/clazz', {
+        method: id ? 'update' : 'add', id, name: $('cName').value,
+        grade: $('cGrade').value, headTeacherId: $('cHeadTeacher').value
+    });
+    showMsg('msg-classes', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { toggleClassForm(); loadClasses(); }
+}
+async function delClass(id) {
+    if (!confirm('确认删除该班级？')) return;
+    const r = await request('/clazz', { method: 'delete', id });
+    showMsg('msg-classes', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadClasses();
+}
+
+/* ================= 课程管理 ================= */
+let _courses = [];
+function toggleCourseForm() {
+    const f = $('courseForm');
+    f.classList.toggle('hidden');
+    if (!f.classList.contains('hidden') && !$('coId').value) { ['coId','coName','coCredit'].forEach(i => $(i).value = ''); }
+}
+async function loadCourses() {
+    const [c, t] = await Promise.all([request('/course', { method: 'list' }), request('/teacher', { method: 'list' })]);
+    _courses = c.data;
+    fillSelect($('coTeacher'), t.data, x => x.name, x => x.id, '选择授课教师');
+    let html = '<table><tr><th>ID</th><th>课程名称</th><th>学分</th><th>授课教师</th><th>操作</th></tr>';
+    c.data.forEach(co => {
+        html += '<tr><td>' + co.id + '</td><td>' + esc(co.name) + '</td><td>' + co.credit + '</td><td>' + esc(co.teacherName) + '</td>' +
+            '<td><button class="btn small gray" onclick="editCourse(' + co.id + ')">编辑</button> ' +
+            '<button class="btn small gray" onclick="bindCourse(' + co.id + ')">绑定班级</button> ' +
+            '<button class="btn small danger" onclick="delCourse(' + co.id + ')">删除</button></td></tr>';
+    });
+    $('courseTable').innerHTML = html + '</table>';
+}
+function editCourse(id) {
+    const co = _courses.find(x => x.id === id);
+    if (!co) return;
+    $('coId').value = co.id; $('coName').value = co.name; $('coCredit').value = co.credit;
+    $('coTeacher').value = co.teacherId || '';
+    $('courseForm').classList.remove('hidden');
+}
+async function saveCourse() {
+    const id = $('coId').value;
+    const r = await request('/course', {
+        method: id ? 'update' : 'add', id, name: $('coName').value,
+        credit: $('coCredit').value, teacherId: $('coTeacher').value
+    });
+    showMsg('msg-courses', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { toggleCourseForm(); loadCourses(); }
+}
+async function delCourse(id) {
+    if (!confirm('确认删除该课程？')) return;
+    const r = await request('/course', { method: 'delete', id });
+    showMsg('msg-courses', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadCourses();
+}
+async function bindCourse(courseId) {
+    const [classes, bound] = await Promise.all([
+        request('/clazz', { method: 'list' }),
+        request('/course', { method: 'listClasses', courseId })
+    ]);
+    const boundIds = bound.data.map(x => x.classId);
+    const options = classes.data.map(cl =>
+        '<label style="margin-right:14px;display:inline-block;"><input type="checkbox" value="' + cl.id + '"' +
+        (boundIds.indexOf(cl.id) >= 0 ? ' checked' : '') + '> ' + esc(cl.name) + '</label>'
+    ).join('');
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:99;';
+    modal.innerHTML = '<div style="background:#fff;border-radius:6px;padding:24px;width:420px;">' +
+        '<h3 style="margin-bottom:16px;">选择授课班级</h3><div>' + options + '</div>' +
+        '<div class="text-right mt10"><button class="btn small" id="bindSave">保存</button> ' +
+        '<button class="btn small gray" id="bindClose">取消</button></div></div>';
+    document.body.appendChild(modal);
+    modal.querySelector('#bindClose').onclick = () => modal.remove();
+    modal.querySelector('#bindSave').onclick = async () => {
+        const checked = [...modal.querySelectorAll('input:checked')].map(i => i.value);
+        for (const id of classes.data.map(x => x.id)) {
+            const want = checked.indexOf(String(id)) >= 0, has = boundIds.indexOf(id) >= 0;
+            if (want && !has) await request('/course', { method: 'bindClass', courseId, classId: id });
+            if (!want && has) await request('/course', { method: 'unbindClass', courseId, classId: id });
+        }
+        modal.remove();
+        alert('班级绑定已更新');
+    };
+}
+
+/* ================= 公告管理 ================= */
+function toggleClassSel() {
+    $('nClassId').classList.toggle('hidden', $('nScope').value !== 'CLASS');
+    if ($('nScope').value === 'CLASS') loadClassOptions('nClassId', '选择班级');
+}
+async function publishNotice() {
+    const data = {
+        method: 'add', title: $('nTitle').value, content: $('nContent').value, scope: $('nScope').value,
+        classId: $('nScope').value === 'CLASS' ? $('nClassId').value : ''
+    };
+    const r = await request('/notice', data);
+    showMsg('msg-notices', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { $('nTitle').value = ''; $('nContent').value = ''; loadNotices(); }
+}
+async function loadNotices() {
+    const r = await request('/notice', { method: 'list' });
+    let html = '<table><tr><th>标题</th><th>范围</th><th>班级</th><th>发布人</th><th>时间</th><th>操作</th></tr>';
+    r.data.forEach(n => {
+        const scope = n.scope === 'ALL' ? '全站' : '班级';
+        const role = n.publisherRole === 'ADMIN' ? '管理员' : '教师';
+        html += '<tr><td>' + esc(n.title) + '</td><td>' + scope + '</td><td>' + esc(n.className) + '</td>' +
+            '<td>' + role + '</td><td>' + esc(n.createdAt) + '</td>' +
+            '<td><button class="btn small danger" onclick="delNotice(' + n.id + ')">删除</button></td></tr>';
+    });
+    $('noticeTable').innerHTML = html + '</table>';
+}
+async function delNotice(id) {
+    if (!confirm('确认删除该公告？')) return;
+    await request('/notice', { method: 'delete', id });
+    loadNotices();
+}
+
+/* ================= 反馈管理 ================= */
+async function loadFeedback() {
+    const r = await request('/feedback', { method: 'list' });
+    let html = '<table><tr><th>学生</th><th>学号</th><th>留言内容</th><th>回复</th><th>状态</th><th>操作</th></tr>';
+    r.data.forEach(f => {
+        const status = f.status === 'REPLIED' ? '已回复' : '未回复';
+        html += '<tr><td>' + esc(f.studentName) + '</td><td>' + esc(f.studentNo) + '</td><td>' + esc(f.content) + '</td>' +
+            '<td>' + esc(f.reply) + '</td><td>' + status + '</td>' +
+            '<td><button class="btn small" onclick="replyFeedback(' + f.id + ')">回复</button> ' +
+            '<button class="btn small danger" onclick="delFeedback(' + f.id + ')">删除</button></td></tr>';
+    });
+    $('feedbackTable').innerHTML = html + '</table>';
+}
+async function replyFeedback(id) {
+    const reply = prompt('请输入回复内容：');
+    if (reply === null) return;
+    const r = await request('/feedback', { method: 'reply', id, reply });
+    showMsg('msg-feedback', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadFeedback();
+}
+async function delFeedback(id) {
+    if (!confirm('确认删除？')) return;
+    await request('/feedback', { method: 'delete', id });
+    loadFeedback();
+}
+
+/* ================= 数据统计 ================= */
+async function loadStats() {
+    const [ca, coa, cla] = await Promise.all([
+        request('/score', { method: 'classAverage' }),
+        request('/score', { method: 'courseAverage' }),
+        request('/clazz', { method: 'list' })
+    ]);
+    renderBars($('classAvgBars'), ca.data.list, 'avgScore');
+    renderBars($('courseAvgBars'), coa.data.list, 'avgScore');
+    fillSelect($('distClass'), cla.data, c => c.name, c => c.id, '选择班级');
+}
+function renderBars(el, list, key) {
+    const max = Math.max(...list.map(x => x[key] || 0), 1);
+    el.innerHTML = list.map(x =>
+        '<div class="bar-row"><div class="bar-label">' + esc(x.name) + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max((x[key] || 0) / max * 100, 2) + '%">' +
+        (x[key] == null ? '暂无' : x[key]) + '</div></div></div>'
+    ).join('');
+}
+async function loadDistribution() {
+    const classId = $('distClass').value;
+    if (!classId) { $('distBars').innerHTML = ''; return; }
+    const r = await request('/score', { method: 'distribution', type: 'class', id: classId });
+    const list = r.data.distribution;
+    const max = Math.max(...list.map(x => x.count), 1);
+    $('distBars').innerHTML = list.map(x =>
+        '<div class="bar-row"><div class="bar-label">' + x.range + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max(x.count / max * 100, x.count ? 3 : 0) + '%">' + x.count + '人</div></div></div>'
+    ).join('');
+}
+
+/* ================= 资源管理 ================= */
+async function loadResources() {
+    const r = await request('/resource', { method: 'list' });
+    let html = '<table><tr><th>文件名</th><th>课程</th><th>上传教师</th><th>说明</th><th>时间</th><th>操作</th></tr>';
+    r.data.forEach(res => {
+        html += '<tr><td><a href="' + contextPath() + esc(res.path) + '" download>' + esc(res.filename) + '</a></td>' +
+            '<td>' + esc(res.courseName) + '</td><td>' + esc(res.teacherName) + '</td><td>' + esc(res.description) + '</td>' +
+            '<td>' + esc(res.createdAt) + '</td>' +
+            '<td><button class="btn small danger" onclick="delResource(' + res.id + ')">删除</button></td></tr>';
+    });
+    $('resourceTable').innerHTML = html + '</table>';
+}
+async function delResource(id) {
+    if (!confirm('确认删除该资源？')) return;
+    const r = await request('/resource', { method: 'delete', id });
+    showMsg('msg-resources', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadResources();
+}
+
+/* ================= 个人中心 ================= */
+async function loadProfile() {
+    const u = await currentUser();
+    $('pName').value = u.name || '';
+    $('pEmail').value = u.email || '';
+    $('pPhone').value = u.phone || '';
+}
+async function saveProfile() {
+    const r = await request('/user', { method: 'updateProfile', name: $('pName').value, email: $('pEmail').value, phone: $('pPhone').value });
+    _userCache = null;
+    showMsg('msg-profile', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) initTopbar();
+}
+async function savePassword() {
+    const r = await request('/user', { method: 'updatePassword', oldPwd: $('pOld').value, newPwd: $('pNew').value });
+    showMsg('msg-pwd', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { $('pOld').value = ''; $('pNew').value = ''; }
+}
+
+/* ================= 加载器映射 ================= */
+const loaders = {
+    overview: loadOverview,
+    users: loadUsers,
+    teachers: loadTeachers,
+    students: loadStudents,
+    classes: loadClasses,
+    courses: loadCourses,
+    notices: loadNotices,
+    feedback: loadFeedback,
+    stats: loadStats,
+    resources: loadResources,
+    profile: loadProfile
+};
+
+initTopbar();
+loadOverview();
+loadClassOptions('sClassFilter', '全部班级');
+loadClassOptions('sClassId', '选择班级');
+</script>
+</body>
+</html>

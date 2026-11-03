@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师端 - 学生综合管理系统</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">学生综合管理系统</div>
+        <div class="nav-item active" data-sec="overview">概览</div>
+        <div class="nav-item" data-sec="courses">我的课程</div>
+        <div class="nav-item" data-sec="scores">成绩录入</div>
+        <div class="nav-item" data-sec="students">学生信息</div>
+        <div class="nav-item" data-sec="notices">公告管理</div>
+        <div class="nav-item" data-sec="feedback">反馈回复</div>
+        <div class="nav-item" data-sec="resources">课件上传</div>
+        <div class="nav-item" data-sec="stats">数据统计</div>
+        <div class="nav-item" data-sec="profile">个人中心</div>
+    </aside>
+    <div class="main">
+        <div class="topbar">
+            <div class="hello" id="helloUser">欢迎</div>
+            <div><button class="btn small gray" onclick="logout()">退出登录</button></div>
+        </div>
+
+        <!-- 概览 -->
+        <section class="section active" id="sec-overview">
+            <div class="panel"><h3>我的教学概览</h3>
+                <div class="stat-cards" id="statCards"></div>
+            </div>
+        </section>
+
+        <!-- 我的课程 -->
+        <section class="section" id="sec-courses">
+            <div class="panel"><h3>我的课程</h3><div id="courseTable"></div></div>
+        </section>
+
+        <!-- 成绩录入 -->
+        <section class="section" id="sec-scores">
+            <div class="panel"><h3>成绩录入 / 修改 / 导出</h3>
+                <div class="toolbar">
+                    <select id="scCourse" onchange="loadScoreClasses()"><option value="">选择课程</option></select>
+                    <select id="scClass"><option value="">选择班级</option></select>
+                    <button class="btn small" onclick="loadScoreEntry()">载入学生</button>
+                    <button class="btn small success" onclick="exportScores()">导出 CSV</button>
+                </div>
+                <div id="msg-scores" class="msg"></div>
+                <div id="scoreTable"></div>
+            </div>
+        </section>
+
+        <!-- 学生信息 -->
+        <section class="section" id="sec-students">
+            <div class="panel"><h3>我授课班级的学生</h3><div id="studentTable"></div></div>
+        </section>
+
+        <!-- 公告管理 -->
+        <section class="section" id="sec-notices">
+            <div class="panel"><h3>发布公告</h3>
+                <div class="form-item"><label>标题</label><input id="nTitle"></div>
+                <div class="form-item"><label>内容</label><textarea id="nContent"></textarea></div>
+                <div class="toolbar">
+                    <select id="nScope" onchange="toggleClassSel()"><option value="ALL">全站公告</option><option value="CLASS">班级公告</option></select>
+                    <select id="nClassId" class="hidden"><option value="">选择班级</option></select>
+                    <button class="btn" onclick="publishNotice()">发布</button>
+                </div>
+                <div id="msg-notices" class="msg"></div>
+            </div>
+            <div class="panel"><h3>我发布的公告</h3><div id="noticeTable"></div></div>
+        </section>
+
+        <!-- 反馈回复 -->
+        <section class="section" id="sec-feedback">
+            <div class="panel"><h3>学生反馈</h3>
+                <div id="msg-feedback" class="msg"></div>
+                <div id="feedbackTable"></div>
+            </div>
+        </section>
+
+        <!-- 课件上传 -->
+        <section class="section" id="sec-resources">
+            <div class="panel"><h3>上传课件 / 资料</h3>
+                <div class="toolbar">
+                    <input type="file" id="file">
+                    <select id="rCourse"><option value="">关联课程（可选）</option></select>
+                    <input id="rDesc" placeholder="资源说明">
+                    <button class="btn" onclick="uploadFile()">上传</button>
+                </div>
+                <div id="msg-resources" class="msg"></div>
+            </div>
+            <div class="panel"><h3>我上传的资源</h3><div id="resourceTable"></div></div>
+        </section>
+
+        <!-- 数据统计 -->
+        <section class="section" id="sec-stats">
+            <div class="panel"><h3>课程平均分</h3><div id="courseAvgBars"></div></div>
+            <div class="panel"><h3>成绩分布（按课程）</h3>
+                <div class="toolbar"><select id="distCourse" onchange="loadDistribution()"><option value="">选择课程</option></select></div>
+                <div id="distBars"></div>
+            </div>
+        </section>
+
+        <!-- 个人中心 -->
+        <section class="section" id="sec-profile">
+            <div class="panel"><h3>个人资料</h3>
+                <div class="form-item"><label>姓名</label><input id="pName"></div>
+                <div class="form-item"><label>邮箱</label><input id="pEmail"></div>
+                <div class="form-item"><label>电话</label><input id="pPhone"></div>
+                <button class="btn" onclick="saveProfile()">保存资料</button>
+                <div id="msg-profile" class="msg mt10"></div>
+            </div>
+            <div class="panel"><h3>修改密码</h3>
+                <div class="form-item"><label>原密码</label><input id="pOld" type="password"></div>
+                <div class="form-item"><label>新密码</label><input id="pNew" type="password"></div>
+                <button class="btn" onclick="savePassword()">修改密码</button>
+                <div id="msg-pwd" class="msg mt10"></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+function $(id) { return document.getElementById(id); }
+function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    $('sec-' + name).classList.add('active');
+    document.querySelector('.nav-item[data-sec="' + name + '"]').classList.add('active');
+    if (loaders[name]) loaders[name]();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => showSection(n.dataset.sec)));
+
+function fillSelect(el, list, textFn, valFn, emptyText) {
+    el.innerHTML = '<option value="">' + (emptyText || '请选择') + '</option>';
+    (list || []).forEach(item => {
+        const o = document.createElement('option');
+        o.value = valFn(item); o.textContent = textFn(item);
+        el.appendChild(o);
+    });
+}
+
+/* ================= 概览 ================= */
+async function loadOverview() {
+    const [courses, classes, students] = await Promise.all([
+        request('/course', { method: 'listByTeacher' }),
+        request('/clazz', { method: 'listByTeacher' }),
+        request('/student', { method: 'listByTeacher' })
+    ]);
+    const cards = [
+        { num: courses.data.length, label: '我的课程' },
+        { num: classes.data.length, label: '我的班级' },
+        { num: students.data.length, label: '我的学生' }
+    ];
+    $('statCards').innerHTML = cards.map(c =>
+        '<div class="stat-card"><div class="num">' + c.num + '</div><div class="label">' + c.label + '</div></div>'
+    ).join('');
+}
+
+/* ================= 我的课程 ================= */
+async function loadCourses() {
+    const r = await request('/course', { method: 'listByTeacher' });
+    _myCourses = r.data;
+    let html = '<table><tr><th>ID</th><th>课程名称</th><th>学分</th></tr>';
+    r.data.forEach(c => { html += '<tr><td>' + c.id + '</td><td>' + esc(c.name) + '</td><td>' + c.credit + '</td></tr>'; });
+    $('courseTable').innerHTML = html + '</table>';
+}
+
+/* ================= 成绩录入 ================= */
+let _myCourses = [];
+let _myClasses = [];
+async function loadScoreClasses() {
+    const r = await request('/clazz', { method: 'listByTeacher' });
+    _myClasses = r.data;
+    fillSelect($('scClass'), _myClasses, c => c.name, c => c.id, '选择班级');
+}
+async function loadScoreEntry() {
+    const courseId = $('scCourse').value, classId = $('scClass').value;
+    if (!courseId || !classId) { showMsg('msg-scores', 'err', '请选择课程和班级'); return; }
+    const r = await request('/score', { method: 'listByCourse', courseId, classId });
+    let html = '<table><tr><th>学号</th><th>姓名</th><th>成绩</th><th>操作</th></tr>';
+    r.data.forEach(s => {
+        html += '<tr><td>' + esc(s.studentNo) + '</td><td>' + esc(s.studentName) + '</td>' +
+            '<td><input type="number" min="0" max="100" step="0.5" id="score_' + s.studentId + '" value="' + (s.score == null ? '' : s.score) + '"></td>' +
+            '<td><button class="btn small" onclick="saveScore(' + s.studentId + ')">保存</button> ' +
+            (s.id ? '<button class="btn small danger" onclick="delScore(' + s.id + ')">删除</button>' : '') + '</td></tr>';
+    });
+    $('scoreTable').innerHTML = html + '</table>';
+}
+async function saveScore(studentId) {
+    const courseId = $('scCourse').value;
+    const score = $('score_' + studentId).value;
+    if (score === '') { showMsg('msg-scores', 'err', '请输入成绩'); return; }
+    const r = await request('/score', { method: 'save', studentId, courseId, score });
+    showMsg('msg-scores', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) loadScoreEntry();
+}
+async function delScore(id) {
+    if (!confirm('确认删除该成绩？')) return;
+    await request('/score', { method: 'delete', id });
+    loadScoreEntry();
+}
+function exportScores() {
+    const courseId = $('scCourse').value, classId = $('scClass').value;
+    if (!courseId || !classId) { showMsg('msg-scores', 'err', '请选择课程和班级'); return; }
+    const form = document.createElement('form');
+    form.method = 'POST'; form.action = contextPath() + '/score';
+    ['method=export', 'courseId=' + courseId, 'classId=' + classId].forEach(kv => {
+        const i = document.createElement('input'); i.type = 'hidden';
+        const [k, v] = kv.split('='); i.name = k; i.value = v; form.appendChild(i);
+    });
+    document.body.appendChild(form); form.submit(); form.remove();
+}
+
+/* ================= 学生信息 ================= */
+async function loadStudents() {
+    const r = await request('/student', { method: 'listByTeacher' });
+    let html = '<table><tr><th>学号</th><th>姓名</th><th>性别</th><th>电话</th><th>班级</th><th>住址</th></tr>';
+    r.data.forEach(s => {
+        html += '<tr><td>' + esc(s.studentNo) + '</td><td>' + esc(s.name) + '</td><td>' + esc(s.gender) + '</td>' +
+            '<td>' + esc(s.phone) + '</td><td>' + esc(s.className) + '</td><td>' + esc(s.address) + '</td></tr>';
+    });
+    $('studentTable').innerHTML = html + '</table>';
+}
+
+/* ================= 公告 ================= */
+function toggleClassSel() {
+    $('nClassId').classList.toggle('hidden', $('nScope').value !== 'CLASS');
+    if ($('nScope').value === 'CLASS') loadMyClassesForNotice();
+}
+async function loadMyClassesForNotice() {
+    const r = await request('/clazz', { method: 'listByTeacher' });
+    fillSelect($('nClassId'), r.data, c => c.name, c => c.id, '选择班级');
+}
+async function publishNotice() {
+    const data = {
+        method: 'add', title: $('nTitle').value, content: $('nContent').value, scope: $('nScope').value,
+        classId: $('nScope').value === 'CLASS' ? $('nClassId').value : ''
+    };
+    const r = await request('/notice', data);
+    showMsg('msg-notices', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { $('nTitle').value = ''; $('nContent').value = ''; loadNotices(); }
+}
+async function loadNotices() {
+    const r = await request('/notice', { method: 'listMine' });
+    let html = '<table><tr><th>标题</th><th>范围</th><th>时间</th><th>操作</th></tr>';
+    r.data.forEach(n => {
+        html += '<tr><td>' + esc(n.title) + '</td><td>' + (n.scope === 'ALL' ? '全站' : esc(n.className)) + '</td>' +
+            '<td>' + esc(n.createdAt) + '</td>' +
+            '<td><button class="btn small danger" onclick="delNotice(' + n.id + ')">删除</button></td></tr>';
+    });
+    $('noticeTable').innerHTML = html + '</table>';
+}
+async function delNotice(id) {
+    if (!confirm('确认删除？')) return;
+    await request('/notice', { method: 'delete', id });
+    loadNotices();
+}
+
+/* ================= 反馈回复 ================= */
+async function loadFeedback() {
+    const r = await request('/feedback', { method: 'list' });
+    let html = '<table><tr><th>学生</th><th>学号</th><th>留言内容</th><th>回复</th><th>状态</th><th>操作</th></tr>';
+    r.data.forEach(f => {
+        html += '<tr><td>' + esc(f.studentName) + '</td><td>' + esc(f.studentNo) + '</td><td>' + esc(f.content) + '</td>' +
+            '<td>' + esc(f.reply) + '</td><td>' + (f.status === 'REPLIED' ? '已回复' : '未回复') + '</td>' +
+            '<td><button class="btn small" onclick="replyFeedback(' + f.id + ')">回复</button></td></tr>';
+    });
+    $('feedbackTable').innerHTML = html + '</table>';
+}
+async function replyFeedback(id) {
+    const reply = prompt('请输入回复内容：');
+    if (reply === null) return;
+    const r = await request('/feedback', { method: 'reply', id, reply });
+    showMsg('msg-feedback', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadFeedback();
+}
+
+/* ================= 课件上传 ================= */
+async function loadResources() {
+    const [res, courses] = await Promise.all([
+        request('/resource', { method: 'list' }),
+        request('/course', { method: 'listByTeacher' })
+    ]);
+    _myCourses = courses.data;
+    fillSelect($('rCourse'), courses.data, c => c.name, c => c.id, '关联课程（可选）');
+    let html = '<table><tr><th>文件名</th><th>课程</th><th>说明</th><th>时间</th><th>操作</th></tr>';
+    res.data.forEach(r => {
+        html += '<tr><td><a href="' + contextPath() + esc(r.path) + '" download>' + esc(r.filename) + '</a></td>' +
+            '<td>' + esc(r.courseName) + '</td><td>' + esc(r.description) + '</td><td>' + esc(r.createdAt) + '</td>' +
+            '<td><button class="btn small danger" onclick="delResource(' + r.id + ')">删除</button></td></tr>';
+    });
+    $('resourceTable').innerHTML = html + '</table>';
+}
+async function uploadFile() {
+    const fileInput = $('file');
+    if (!fileInput.files.length) { showMsg('msg-resources', 'err', '请选择文件'); return; }
+    const fd = new FormData();
+    fd.append('method', 'upload');
+    fd.append('file', fileInput.files[0]);
+    fd.append('courseId', $('rCourse').value);
+    fd.append('description', $('rDesc').value);
+    const resp = await fetch(contextPath() + '/resource', { method: 'POST', body: fd });
+    const r = await resp.json();
+    showMsg('msg-resources', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { fileInput.value = ''; $('rDesc').value = ''; loadResources(); }
+}
+async function delResource(id) {
+    if (!confirm('确认删除？')) return;
+    const r = await request('/resource', { method: 'delete', id });
+    showMsg('msg-resources', r.code === 0 ? 'ok' : 'err', r.msg);
+    loadResources();
+}
+
+/* ================= 数据统计 ================= */
+async function loadStats() {
+    const [coa, courses] = await Promise.all([
+        request('/score', { method: 'courseAverage' }),
+        request('/course', { method: 'listByTeacher' })
+    ]);
+    _myCourses = courses.data;
+    fillSelect($('distCourse'), courses.data, c => c.name, c => c.id, '选择课程');
+    const max = Math.max(...coa.data.list.map(x => x.avgScore || 0), 1);
+    $('courseAvgBars').innerHTML = coa.data.list.map(x =>
+        '<div class="bar-row"><div class="bar-label">' + esc(x.name) + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max((x.avgScore || 0) / max * 100, 2) + '%">' +
+        (x.avgScore == null ? '暂无' : x.avgScore) + '</div></div></div>'
+    ).join('');
+}
+async function loadDistribution() {
+    const courseId = $('distCourse').value;
+    if (!courseId) { $('distBars').innerHTML = ''; return; }
+    const r = await request('/score', { method: 'distribution', type: 'course', id: courseId });
+    const list = r.data.distribution;
+    const max = Math.max(...list.map(x => x.count), 1);
+    $('distBars').innerHTML = list.map(x =>
+        '<div class="bar-row"><div class="bar-label">' + x.range + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max(x.count / max * 100, x.count ? 3 : 0) + '%">' + x.count + '人</div></div></div>'
+    ).join('');
+}
+
+/* ================= 个人中心 ================= */
+async function loadProfile() {
+    const u = await currentUser();
+    $('pName').value = u.name || '';
+    $('pEmail').value = u.email || '';
+    $('pPhone').value = u.phone || '';
+}
+async function saveProfile() {
+    const r = await request('/user', { method: 'updateProfile', name: $('pName').value, email: $('pEmail').value, phone: $('pPhone').value });
+    _userCache = null;
+    showMsg('msg-profile', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) initTopbar();
+}
+async function savePassword() {
+    const r = await request('/user', { method: 'updatePassword', oldPwd: $('pOld').value, newPwd: $('pNew').value });
+    showMsg('msg-pwd', r.code === 0 ? 'ok' : 'err', r.msg);
+    if (r.code === 0) { $('pOld').value = ''; $('pNew').value = ''; }
+}
+
+const loaders = {
+    overview: loadOverview,
+    courses: loadCourses,
+    scores: loadScoreClasses,
+    students: loadStudents,
+    notices: loadNotices,
+    feedback: loadFeedback,
+    resources: loadResources,
+    stats: loadStats,
+    profile: loadProfile
+};
+
+initTopbar();
+loadOverview();
+(async () => {
+    const c = await request('/course', { method: 'listByTeacher' });
+    _myCourses = c.data;
+    fillSelect($('scCourse'), c.data, x => x.name, x => x.id, '选择课程');
+    await loadScoreClasses();
+})();
+</script>
+</body>
+</html>

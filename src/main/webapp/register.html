@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 学生综合管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card" style="width:440px;">
+        <h1>注册学生账号</h1>
+        <p class="sub">填写以下信息完成注册</p>
+        <div id="msg" class="msg"></div>
+        <div class="form-item"><label>用户名</label><input id="username" type="text"></div>
+        <div class="form-item"><label>密码</label><input id="password" type="password"></div>
+        <div class="form-item"><label>姓名</label><input id="name" type="text"></div>
+        <div class="form-item"><label>学号</label><input id="studentNo" type="text"></div>
+        <div class="form-item"><label>性别</label>
+            <select id="gender"><option value="男">男</option><option value="女">女</option></select>
+        </div>
+        <div class="form-item"><label>联系电话</label><input id="phone" type="text"></div>
+        <div class="form-item"><label>所属班级</label><select id="classId"><option value="">暂不分配</option></select></div>
+        <div class="form-item"><label>入学年份</label><input id="enrollmentYear" type="text" placeholder="如 2023"></div>
+        <div class="form-item"><label>住址</label><input id="address" type="text"></div>
+        <button class="btn block" onclick="doRegister()">注 册</button>
+        <p class="sub mt10" style="margin-bottom:0;">已有账号？<a href="login.html">返回登录</a></p>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script>
+async function loadClasses() {
+    const r = await request('/clazz', { method: 'list' });
+    if (r.code === 0) {
+        const sel = document.getElementById('classId');
+        r.data.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            sel.appendChild(opt);
+        });
+    }
+}
+async function doRegister() {
+    const data = {
+        method: 'register',
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value.trim(),
+        name: document.getElementById('name').value.trim(),
+        studentNo: document.getElementById('studentNo').value.trim(),
+        gender: document.getElementById('gender').value,
+        phone: document.getElementById('phone').value.trim(),
+        classId: document.getElementById('classId').value,
+        enrollmentYear: document.getElementById('enrollmentYear').value.trim(),
+        address: document.getElementById('address').value.trim()
+    };
+    const r = await request('/user', data);
+    if (r.code !== 0) {
+        showMsg('msg', 'err', r.msg);
+        return;
+    }
+    showMsg('msg', 'ok', '注册成功，正在跳转登录...');
+    setTimeout(() => location.href = 'login.html', 1200);
+}
+loadClasses();
+</script>
+</body>
+</html>
